@@ -14,6 +14,8 @@ SLEEP_DELAY = 2
 MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
 LATEST_TIMESTAMP_BLOB = "latest_timestamp.json"  # single blob to track latest timestamp
+MAX_FILE_SIZE_MB = 128  # flush if exceeds
+BACKFILL_MODE = os.getenv("BACKFILL_MODE", "false").lower() == "true"
 
 # Get connection string from Azure Function App settings
 def get_blob_client():
@@ -51,6 +53,24 @@ def save_latest_timestamp(timestamp: datetime | None) -> None:
         overwrite=True,
         content_settings=ContentSettings(content_type="application/json"),
     )
+
+
+def check_file_size_and_flush(blob_name: str, buffer: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+    """Flush buffer to blob if it exceeds MAX_FILE_SIZE_MB."""
+    data_bytes = json.dumps(buffer, indent=2).encode("utf-8")
+    size_mb = len(data_bytes) / (1024 * 1024)
+    if size_mb >= MAX_FILE_SIZE_MB:
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        new_blob_name = f"{blob_name}_flushed_{timestamp}.json"
+        blob_client = container_client.get_blob_client(new_blob_name)
+        blob_client.upload_blob(
+            data_bytes,
+            overwrite=True,
+            content_settings=ContentSettings(content_type="application/json"),
+        )
+        logging.info(f"Flushed {len(buffer)} articles to blob {new_blob_name} ({size_mb:.2f} MB)")
+        return new_blob_name, []
+    return blob_name, buffer
 
 
 def fetch_page(page: int) -> list[dict[str, Any]]:
@@ -97,7 +117,13 @@ def collect_new_articles(latest_timestamp: datetime | None) -> tuple[list[dict[s
                 logging.info("Reached already processed articles. Stopping.")
                 return new_articles, max_ts_seen, last_page_fetched
 
-            new_articles.append(article)
+            if BACKFILL_MODE:
+                # Append to buffer and check flush
+                buffer.append(article)
+                blob_name, buffer = check_file_size_and_flush(blob_name, buffer)
+            else:
+                new_articles.append(article)
+
             if not max_ts_seen or published_at > max_ts_seen:
                 max_ts_seen = published_at
 
@@ -105,7 +131,18 @@ def collect_new_articles(latest_timestamp: datetime | None) -> tuple[list[dict[s
         page += 1
         time.sleep(SLEEP_DELAY)
 
-    return new_articles, max_ts_seen, last_page_fetched
+    # Flush remaining buffer if backfill
+    if BACKFILL_MODE and buffer:
+        blob_client = container_client.get_blob_client(blob_name)
+        blob_client.upload_blob(
+            json.dumps(buffer, indent=2),
+            overwrite=True,
+            content_settings=ContentSettings(content_type="application/json"),
+        )
+        logging.info(f"Final flush {len(buffer)} articles to blob {blob_name}")
+
+    # In backfill mode, main should not save_articles
+    return ([] if BACKFILL_MODE else new_articles), max_ts_seen, last_page_fetched
 
 
 def save_articles(new_articles: list[dict[str, Any]], max_ts_seen: datetime | None, last_page_fetched: int) -> None:
