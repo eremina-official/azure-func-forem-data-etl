@@ -18,6 +18,17 @@ MAX_FILE_SIZE_MB = 128  # flush if exceeds
 backfill_timestamp = os.getenv("BACKFILL_MODE", "")
 
 
+def save_backfill_page(page: int | None) -> None:
+    if not page:
+        return
+    blob_client = container_client.get_blob_client(LATEST_TIMESTAMP_BLOB)
+    blob_client.upload_blob(
+        json.dumps({"page": page}),
+        overwrite=True,
+        content_settings=ContentSettings(content_type="application/json"),
+    )
+
+
 # Get connection string from Azure Function App settings
 def get_blob_client():
     conn_str = os.getenv("BLOB_CONN_STR")
@@ -94,6 +105,7 @@ def collect_new_articles(latest_timestamp: datetime | None) -> None:
 
             if latest_timestamp and published_at <= latest_timestamp:
                 logging.info("Reached already processed articles. Stopping.")
+                save_backfill_page(page)
                 # exit entire backfill, not just the inner loop
                 if buffer:
                     # flush remaining buffer
@@ -132,7 +144,7 @@ def main_fetch_backfill() -> None:
     latest_timestamp = None
     if backfill_timestamp:
         try:
-            latest_timestamp = datetime.fromisoformat('2026-02-13T13:45:22+00:00')
+            latest_timestamp = datetime.fromisoformat('2025-01-14T13:52:00+00:00')
         except ValueError:
             logging.warning("Invalid BACKFILL_MODE timestamp")
             return
