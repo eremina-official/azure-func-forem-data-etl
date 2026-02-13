@@ -1,0 +1,42 @@
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | __azurite.*
+  | __blobstorage__
+  | __queuestorage__
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".env",
+    "build",
+    "dist",
+    ".pytest_cache",
+    ".mypy_cache",
+    "__azurite*",
+    "__blobstorage__",
+    "__queuestorage__",
+]
+ignore = [
+    "W503",  # line break before binary operator
+    "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by black)
+]
