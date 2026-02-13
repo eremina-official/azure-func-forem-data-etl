@@ -42,7 +42,9 @@ def save_backfill_page(page: int | None) -> None:
     )
 
 
-def check_file_size_and_flush(blob_name: str, buffer: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+def check_file_size_and_flush(
+    blob_name: str, buffer: list[dict[str, Any]]
+) -> tuple[str, list[dict[str, Any]]]:
     """Flush buffer to blob if it exceeds MAX_FILE_SIZE_MB."""
     data_bytes = json.dumps(buffer, indent=2).encode("utf-8")
     size_mb = len(data_bytes) / (1024 * 1024)
@@ -55,7 +57,9 @@ def check_file_size_and_flush(blob_name: str, buffer: list[dict[str, Any]]) -> t
             overwrite=True,
             content_settings=ContentSettings(content_type="application/json"),
         )
-        logging.info(f"Flushed {len(buffer)} articles to blob {new_blob_name} ({size_mb:.2f} MB)")
+        logging.info(
+            f"Flushed {len(buffer)} articles to blob {new_blob_name} ({size_mb:.2f} MB)"
+        )
         return new_blob_name, []
     return blob_name, buffer
 
@@ -98,7 +102,9 @@ def collect_new_articles(latest_timestamp: datetime | None) -> None:
 
         for article in articles:
             try:
-                published_at = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
+                published_at = datetime.fromisoformat(
+                    article["published_at"].replace("Z", "+00:00")
+                )
             except (KeyError, ValueError, TypeError) as exc:
                 logging.warning("Skipping article due to parsing error: %s", exc)
                 continue
@@ -113,9 +119,13 @@ def collect_new_articles(latest_timestamp: datetime | None) -> None:
                     blob_client.upload_blob(
                         json.dumps(buffer, indent=2),
                         overwrite=True,
-                        content_settings=ContentSettings(content_type="application/json"),
+                        content_settings=ContentSettings(
+                            content_type="application/json"
+                        ),
                     )
-                    logging.info(f"Final flush {len(buffer)} articles to blob {blob_name}")
+                    logging.info(
+                        f"Final flush {len(buffer)} articles to blob {blob_name}"
+                    )
                 return
 
             # Append to buffer and check flush
@@ -144,15 +154,14 @@ def main_fetch_backfill() -> None:
     latest_timestamp = None
     if backfill_timestamp:
         try:
-            timestamp = '2026-02-13T13:45:22+00:00'
+            timestamp = "2026-02-13T13:45:22+00:00"
             # timestamp = '2025-01-14T13:52:00+00:00'
             latest_timestamp = datetime.fromisoformat(timestamp)
         except ValueError:
             logging.warning("Invalid BACKFILL_MODE timestamp")
             return
 
-
-    logging.info(f'latest timestamp: {latest_timestamp}')
+    logging.info(f"latest timestamp: {latest_timestamp}")
     collect_new_articles(latest_timestamp)
 
     logging.info("Azure Function completed successfully.")

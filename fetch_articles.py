@@ -15,6 +15,7 @@ MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
 LATEST_TIMESTAMP_BLOB = "latest_timestamp.json"  # single blob to track latest timestamp
 
+
 # Get connection string from Azure Function App settings
 def get_blob_client():
     conn_str = os.getenv("BLOB_CONN_STR")
@@ -37,7 +38,7 @@ def load_latest_timestamp() -> datetime | None:
         if latest_ts_str:
             return datetime.fromisoformat(latest_ts_str)
     except Exception:
-        logging.info('no timestamp')
+        logging.info("no timestamp")
         return None
     return None
 
@@ -74,7 +75,9 @@ def fetch_page(page: int) -> list[dict[str, Any]]:
     return []
 
 
-def collect_new_articles(latest_timestamp: datetime | None) -> tuple[list[dict[str, Any]], datetime | None, int]:
+def collect_new_articles(
+    latest_timestamp: datetime | None,
+) -> tuple[list[dict[str, Any]], datetime | None, int]:
     new_articles: list[dict[str, Any]] = []
     page = 1
     max_ts_seen = latest_timestamp
@@ -88,7 +91,9 @@ def collect_new_articles(latest_timestamp: datetime | None) -> tuple[list[dict[s
 
         for article in articles:
             try:
-                published_at = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
+                published_at = datetime.fromisoformat(
+                    article["published_at"].replace("Z", "+00:00")
+                )
             except (KeyError, ValueError, TypeError) as exc:
                 logging.warning("Skipping article due to parsing error: %s", exc)
                 continue
@@ -108,12 +113,16 @@ def collect_new_articles(latest_timestamp: datetime | None) -> tuple[list[dict[s
     return new_articles, max_ts_seen, last_page_fetched
 
 
-def save_articles(new_articles: list[dict[str, Any]], max_ts_seen: datetime | None, last_page_fetched: int) -> None:
+def save_articles(
+    new_articles: list[dict[str, Any]],
+    max_ts_seen: datetime | None,
+    last_page_fetched: int,
+) -> None:
     """Save articles to Azure Blob Storage (flat naming)."""
     file_page = last_page_fetched or 1
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    blob_name = f"{today_str}/page={file_page}_{timestamp}.json" # flat naming that mimics folders
+    blob_name = f"{today_str}/page={file_page}_{timestamp}.json"  # flat naming that mimics folders
 
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.upload_blob(
@@ -130,8 +139,10 @@ def main() -> None:
     logging.info("Azure Function started.")
     latest_timestamp = load_latest_timestamp()
 
-    logging.info(f'latest timestamp: {latest_timestamp}')
-    new_articles, max_ts_seen, last_page_fetched = collect_new_articles(latest_timestamp)
+    logging.info(f"latest timestamp: {latest_timestamp}")
+    new_articles, max_ts_seen, last_page_fetched = collect_new_articles(
+        latest_timestamp
+    )
 
     if not new_articles:
         logging.info("No new articles found.")

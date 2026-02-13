@@ -10,18 +10,22 @@ backfill_timestamp = os.getenv("BACKFILL_MODE", "")
 
 app = func.FunctionApp()
 
-@app.timer_trigger(schedule=schedule, arg_name="myTimer", run_on_startup=False,
-              use_monitor=False) 
+
+@app.timer_trigger(
+    schedule=schedule, arg_name="myTimer", run_on_startup=False, use_monitor=False
+)
 def timer_trigger(myTimer: func.TimerRequest) -> None:
     if myTimer.past_due:
-        logging.info('The timer is past due!')
-    
+        logging.info("The timer is past due!")
+
     if backfill_timestamp:
         logging.info(f"Triggering backfill for timestamp {backfill_timestamp}")
         main_fetch_backfill()
-        logging.info("Backfill completed. Consider clearing BACKFILL_MODE env variable.")
+        logging.info(
+            "Backfill completed. Consider clearing BACKFILL_MODE env variable."
+        )
     else:
         logging.info("Triggering normal fetch.")
         main()
 
-    logging.info('Python timer trigger function executed.')
+    logging.info("Python timer trigger function executed.")
