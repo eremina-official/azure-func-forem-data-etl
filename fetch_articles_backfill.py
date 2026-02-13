@@ -2,7 +2,6 @@ import logging
 import json
 import time
 from datetime import datetime, timezone
-from dateutil import parser
 from typing import Any
 import os
 import requests
@@ -16,6 +15,8 @@ MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
 LATEST_TIMESTAMP_BLOB = "latest_timestamp.json"  # single blob to track latest timestamp
 MAX_FILE_SIZE_MB = 128  # flush if exceeds
+backfill_timestamp = os.getenv("BACKFILL_MODE", "")
+
 
 # Get connection string from Azure Function App settings
 def get_blob_client():
@@ -126,14 +127,12 @@ def collect_new_articles(latest_timestamp: datetime | None) -> None:
         logging.info(f"Final flush {len(buffer)} articles to blob {blob_name}")
 
 
-def main_fetch_backfill(backfill_timestamp: str) -> None:
+def main_fetch_backfill() -> None:
     logging.info("Azure Function started in backfill mode.")
     latest_timestamp = None
     if backfill_timestamp:
         try:
-            dt = datetime(2026, 2, 13, 13, 45, 22, tzinfo=timezone.utc)
-            iso_str = dt.isoformat()  # "2026-02-13T13:45:22+00:00"
-            latest_timestamp = datetime.fromisoformat(iso_str)
+            latest_timestamp = datetime.fromisoformat('2026-02-13T13:45:22+00:00')
         except ValueError:
             logging.warning("Invalid BACKFILL_MODE timestamp")
             return

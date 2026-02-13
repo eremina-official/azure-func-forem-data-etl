@@ -5,6 +5,7 @@ from fetch_articles import main
 from fetch_articles_backfill import main_fetch_backfill
 
 schedule = os.getenv("FETCH_TIMER_SCHEDULE", "0 0 0 * * *")
+backfill_timestamp = os.getenv("BACKFILL_MODE", "")
 
 
 app = func.FunctionApp()
@@ -15,11 +16,9 @@ def timer_trigger(myTimer: func.TimerRequest) -> None:
     if myTimer.past_due:
         logging.info('The timer is past due!')
     
-    backfill_timestamp = os.getenv("BACKFILL_MODE", "")
-
     if backfill_timestamp:
         logging.info(f"Triggering backfill for timestamp {backfill_timestamp}")
-        main_fetch_backfill(backfill_timestamp)
+        main_fetch_backfill()
         logging.info("Backfill completed. Consider clearing BACKFILL_MODE env variable.")
     else:
         logging.info("Triggering normal fetch.")
