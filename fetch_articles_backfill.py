@@ -13,20 +13,9 @@ PER_PAGE = 300
 SLEEP_DELAY = 2
 MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
-LATEST_TIMESTAMP_BLOB = "latest_timestamp.json"  # single blob to track latest timestamp
+BACKFILL_PAGE_BLOB = "backfill_page.json"  # single blob to track latest timestamp
 MAX_FILE_SIZE_MB = 128  # flush if exceeds
 backfill_timestamp = os.getenv("BACKFILL_MODE", "")
-
-
-def save_backfill_page(page: int | None) -> None:
-    if not page:
-        return
-    blob_client = container_client.get_blob_client(LATEST_TIMESTAMP_BLOB)
-    blob_client.upload_blob(
-        json.dumps({"page": page}),
-        overwrite=True,
-        content_settings=ContentSettings(content_type="application/json"),
-    )
 
 
 # Get connection string from Azure Function App settings
@@ -40,6 +29,17 @@ def get_blob_client():
 
 blob_service_client = get_blob_client()
 container_client = blob_service_client.get_container_client(CONTAINER_NAME)
+
+
+def save_backfill_page(page: int | None) -> None:
+    if not page:
+        return
+    blob_client = container_client.get_blob_client(BACKFILL_PAGE_BLOB)
+    blob_client.upload_blob(
+        json.dumps({"page": page}),
+        overwrite=True,
+        content_settings=ContentSettings(content_type="application/json"),
+    )
 
 
 def check_file_size_and_flush(blob_name: str, buffer: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
@@ -144,7 +144,9 @@ def main_fetch_backfill() -> None:
     latest_timestamp = None
     if backfill_timestamp:
         try:
-            latest_timestamp = datetime.fromisoformat('2025-01-14T13:52:00+00:00')
+            timestamp = '2026-02-13T13:45:22+00:00'
+            # timestamp = '2025-01-14T13:52:00+00:00'
+            latest_timestamp = datetime.fromisoformat(timestamp)
         except ValueError:
             logging.warning("Invalid BACKFILL_MODE timestamp")
             return
