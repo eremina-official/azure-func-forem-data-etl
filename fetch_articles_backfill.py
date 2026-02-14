@@ -154,8 +154,8 @@ def main_fetch_backfill() -> None:
     latest_timestamp = None
     if backfill_timestamp:
         try:
-            timestamp = "2026-02-13T13:45:22+00:00"
-            # timestamp = '2025-01-14T13:52:00+00:00'
+            # timestamp = "2026-02-13T13:45:22+00:00"
+            timestamp = "2025-01-14T13:52:00+00:00"
             latest_timestamp = datetime.fromisoformat(timestamp)
         except ValueError:
             logging.warning("Invalid BACKFILL_MODE timestamp")
