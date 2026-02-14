@@ -10,7 +10,7 @@ from azure.storage.blob import BlobServiceClient, ContentSettings
 # --- Configuration ---
 API_URL = "https://dev.to/api/articles/latest"
 PER_PAGE = 300
-SLEEP_DELAY = 2
+SLEEP_DELAY = 1  # seconds between page fetches to respect API limits
 MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
 LATEST_TIMESTAMP_BLOB = "latest_timestamp.json"  # single blob to track latest timestamp
