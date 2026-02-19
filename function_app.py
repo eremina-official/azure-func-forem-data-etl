@@ -1,8 +1,9 @@
 import logging
-import azure.functions as func
 import os
-from fetch_articles import main
 
+import azure.functions as func
+
+from fetch_articles_backfill import main_fetch_backfill
 
 schedule = os.getenv("FETCH_TIMER_SCHEDULE", "0 0 0 * * *")
 backfill_timestamp = os.getenv("BACKFILL_MODE", "")
@@ -18,8 +19,8 @@ def timer_trigger(myTimer: func.TimerRequest) -> None:
     if myTimer.past_due:
         logging.info("The timer is past due!")
 
-    logging.info("Triggering normal fetch.")
+    # logging.info("Triggering normal fetch.")
 
-    main()
+    main_fetch_backfill()
 
     logging.info("Python timer trigger function executed.")

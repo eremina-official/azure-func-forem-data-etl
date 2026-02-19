@@ -1,22 +1,23 @@
-import logging
 import json
+import logging
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any
-import os
+
 import requests
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 # --- Configuration ---
 API_URL = "https://dev.to/api/articles/latest"
-PER_PAGE = 300
-SLEEP_DELAY = 1
+PER_PAGE = 500
+SLEEP_DELAY = 0.5  # seconds between API calls to avoid rate limits
 MAX_RETRIES = 3  # retries per API call
 CONTAINER_NAME = "forem-data"
 BACKFILL_PAGE_BLOB = "backfill_page.json"  # single blob to track latest timestamp
 MAX_FILE_SIZE_MB = 128  # flush if exceeds
 backfill_timestamp = os.getenv("BACKFILL_MODE", "")
-MAX_PAGES_PER_RUN = 10  # fetch at most 10 pages per timer trigger
+MAX_PAGES_PER_RUN = 15  # fetch at most 15 pages per timer trigger
 
 
 # Get connection string from Azure Function App settings
@@ -76,7 +77,7 @@ def fetch_page(page: int) -> list[dict[str, Any]]:
 
 
 def collect_new_articles() -> None:
-    start_page = load_backfill_page()
+    start_page = 570
     page = start_page
     pages_fetched = 0
     buffer: list[dict[str, Any]] = []
