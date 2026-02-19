@@ -77,7 +77,7 @@ def fetch_page(page: int) -> list[dict[str, Any]]:
 
 
 def collect_new_articles() -> None:
-    start_page = 570
+    start_page = load_backfill_page()
     page = start_page
     pages_fetched = 0
     buffer: list[dict[str, Any]] = []
