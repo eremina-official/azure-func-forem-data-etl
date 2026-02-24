@@ -3,24 +3,22 @@ import os
 
 import azure.functions as func
 
-from fetch_articles_backfill import main_fetch_backfill
-
-schedule = os.getenv("FETCH_TIMER_SCHEDULE", "0 0 0 * * *")
-backfill_timestamp = os.getenv("BACKFILL_MODE", "")
+from fetch_articles import main as fetch_articles_main
 
 
 app = func.FunctionApp()
 
 
-@app.timer_trigger(
-    schedule=schedule, arg_name="myTimer", run_on_startup=False, use_monitor=False
-)
-def timer_trigger(myTimer: func.TimerRequest) -> None:
-    if myTimer.past_due:
-        logging.info("The timer is past due!")
+@app.route()
+def http_trigger(req):
+    logging.info("HTTP trigger function received a request.")
 
-    # logging.info("Triggering normal fetch.")
+    try:
+        fetch_articles_main()
+    except Exception as e:
+        logging.error(f"Processing failed: {e}")
+        return func.HttpResponse(f"Function execution failed: {e}", status_code=500)
 
-    main_fetch_backfill()
+    logging.info("HTTP trigger function executed successfully.")
 
-    logging.info("Python timer trigger function executed.")
+    return func.HttpResponse("Function executed successfully.", status_code=200)
