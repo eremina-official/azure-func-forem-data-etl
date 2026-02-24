@@ -9,7 +9,9 @@ from fetch_articles import main as fetch_articles_main
 app = func.FunctionApp()
 
 
-@app.route()
+@app.route(
+    route="http_trigger", auth_level=func.AuthLevel.FUNCTION, methods=["GET", "POST"]
+)
 def http_trigger(req):
     logging.info("HTTP trigger function received a request.")
 
