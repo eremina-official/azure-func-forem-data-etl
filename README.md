@@ -1,4 +1,4 @@
-# Azure Function App in Forem Data ETL Pipeline
+# Azure Function App in Forem Data ELT Pipeline
 
 Azure Function that fetches the latest DEV (Forem) articles via `https://dev.to/api/articles/latest` and stores each batch in an Azure Blob Storage container. The function keeps track of the newest processed timestamp in `latest_timestamp.json` so repeat executions only ingest fresh content.
 
